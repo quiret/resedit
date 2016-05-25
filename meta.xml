@@ -1,5 +1,5 @@
 <meta>
-    <info author="Martin Turski" version="0.9" type="util" />
+	<info author="The_GTA" name="Resource Manager" description="A MTA Resource Editor to edit your resources efficiently." type="misc" version="0.9" />
 
     <!-- Shared resedit components (server and client) !-->
     <script src="shared.lua" type="shared" />
