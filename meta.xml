@@ -1,0 +1,62 @@
+<meta>
+    <info author="Martin Turski" version="0.9" type="util" />
+
+    <!-- Shared resedit components (server and client) !-->
+    <script src="shared.lua" type="shared" />
+    <script src="class.lua" type="shared" />
+    <script src="threads.lua" type="shared" />
+    <script src="math/mathlib.lua" type="shared" />
+    
+    <!-- Server-side resedit components !-->
+    <script src="resources_server.lua" type="server" />
+    <script src="resedit_server.lua" type="server" />
+    <script src="repository.lua" type="server" />
+    
+    <!-- Client-side resedit components !-->
+    <script src="utilities_client.lua" type="client" />
+    <script src="dxElements/dxElements_client.lua" type="client" />
+    <script src="dxElements/dxElements_ceguicompat_client.lua" type="client" />
+    <script src="dxElements/inputhandler_client.lua" type="client" />
+    <script src="dxElements/inputhandler_ceguicompat_client.lua" type="client" />
+    
+    <!-- Client-side resedit_gdk components !-->
+    <script src="resedit_gdk/guiutils_client.lua" type="client" />
+    <script src="resedit_gdk/guibutton_client.lua" type="client" />
+    <script src="resedit_gdk/guicheckbox_client.lua" type="client" />
+    <script src="resedit_gdk/guicolorselect_client.lua" type="client" />
+    <script src="resedit_gdk/guicombobox_client.lua" type="client" />
+    <script src="resedit_gdk/guidropdown_client.lua" type="client" />
+    <script src="resedit_gdk/guieditbox_client.lua" type="client" />
+    <script src="resedit_gdk/guieditor_client.lua" type="client" />
+    <script src="resedit_gdk/guihint_client.lua" type="client" />
+    <script src="resedit_gdk/guilistbox_client.lua" type="client" />
+    <script src="resedit_gdk/guimenu_client.lua" type="client" />
+    <script src="resedit_gdk/guimsgbox_client.lua" type="client" />
+    <script src="resedit_gdk/guiprogressbar_client.lua" type="client" />
+    <script src="resedit_gdk/guiscrollbar_client.lua" type="client" />
+    <script src="resedit_gdk/guiscrollpane_client.lua" type="client" />
+    <script src="resedit_gdk/guitabpanel_client.lua" type="client" />
+    <script src="resedit_gdk/guiwindow_client.lua" type="client" />
+    <file src="resedit_gdk/wndres_hdlc.fx" type="client" />
+    <file src="resedit_gdk/colorcircle.fx" type="client" />
+    <file src="resedit_gdk/arrow.png" type="client" />
+    <file src="resedit_gdk/images/arrow_d.png" type="client" />
+    <file src="resedit_gdk/images/arrow_l.png" type="client" />
+    <file src="resedit_gdk/images/arrow_r.png" type="client" />
+    <file src="resedit_gdk/images/arrow_u.png" type="client" />
+    <file src="resedit_gdk/images/check.png" type="client" />
+
+    <script src="guithemes_client.lua" type="client" />
+    <script src="downloadmanager_client.lua" type="client" />
+    <script src="objectmanagement_client.lua" type="client" />
+    <script src="resedit_client.lua" type="client" />
+    <script src="debugapi_client.lua" type="client" />
+    
+    <!-- Configuration defaults !-->
+    <file src="default/acl.xml" type="client" />
+    <file src="default/config.xml" type="client" />
+    <file src="pixel.png" type="client" />
+    
+    <!-- Client-side export interface !-->
+    <export function="openScript" type="client" />
+</meta>
