@@ -14,6 +14,9 @@ local createDXElement = createDXElement;
 
 local windows = {};
 
+local straightResizeCursor = gdkLoadTexture("images/straight_resize.png");
+local diagResizeCursor = gdkLoadTexture("images/diag_resize.png");
+
 function createWindow(parent)
 	local window = createDXElement("window", parent);
 	
@@ -44,6 +47,21 @@ function createWindow(parent)
 	local sizable = false;
 	local movable = true;
 	local dOffX, dOffY;
+    
+    -- Dragging margin stuff.
+    local resizeDragMarginSize = 6;
+    local allowCursorResize = false;
+    local didSetRenderFunctor = false;
+    
+    -- Resize states.
+    local resizeStateTop = false;
+    local resizeStateLeft = false;
+    local resizeStateBottom = false;
+    local resizeStateRight = false;
+    local doResize = false;
+    local resizeCursorStartX, resizeCursorStartY;
+    local resizeMetricPosX, resizeMetricPosY;
+    local resizeMetricWidth, resizeMetricHeight;
 	
 	window.setCaptiveMode(false);
 	
@@ -82,7 +100,7 @@ function createWindow(parent)
 	end
 	
 	function window.isDragging()
-		return drag;
+		return drag or doResize;
 	end
 	
 	function window.setText(text)
@@ -178,6 +196,36 @@ function createWindow(parent)
 	function window.getHeadingRightColor()
 		return hdlc_rr, hdlc_rg, hdlc_rb;
 	end
+    
+    function window.setAllowCursorResize(enable)
+        if (enable) then
+            setExtraMargin(
+                resizeDragMarginSize,
+                resizeDragMarginSize,
+                resizeDragMarginSize,
+                resizeDragMarginSize
+            );
+        
+            allowCursorResize = true;
+        else
+            setExtraMargin(0, 0, 0, 0);
+            
+            allowCursorResize = false;
+            
+            -- Disable any pending resize.
+            resizeStateTop = false;
+            resizeStateLeft = false;
+            resizeStateBottom = false;
+            resizeStateRight = false;
+            doResize = false;
+        end
+        
+        return true;
+    end
+    
+    function window.getAllowCursorResize()
+        return allowCursorResize;
+    end
 	
 	function window.getRoot()
 		return root;
@@ -219,30 +267,359 @@ function createWindow(parent)
 	function window.isMovable()
 		return movable;
 	end
+    
+    local function dispatchResizeQuantors(
+        localX, localY, width, height,
+        leftSide, rightSide, topSide, bottomSide,
+        topLeftSide, bottomLeftSide,
+        topRightSide, bottomRightSide
+    )
+        if (localY >= 0) and (localY <= height) then
+            if (localX < 0) then
+                -- Left side.
+                leftSide();
+            elseif (localX >= width) then
+                -- Right side.
+                rightSide();
+            end
+        elseif (localX >= 0) and (localX <= width) then
+            if (localY < 0) then
+                -- Top side.
+                topSide();
+            elseif (localY >= height) then
+                -- Bottom side.
+                bottomSide();
+            end
+        elseif (localX < 0) then
+            if (localY < 0) then
+                -- Top left.
+                topLeftSide();
+            elseif (localY >= height) then
+                -- Bottom left.
+                bottomLeftSide();
+            end
+        elseif (localX >= width) then
+            if (localY < 0) then
+                -- Top right,
+                topRightSide();
+            elseif (localY >= height) then
+                -- Bottom right.
+                bottomRightSide();
+            end
+        end
+    end
 	
 	function window.mouseclick(button, state, x, y)
 		if not (button == "left") then return true; end;
-		if not (movable) then return true; end;
 		
-		if (state) then
-			if (y > headerHeight + 2) then return true; end;
-			
-			drag = true;
-			dOffX, dOffY = x, y;
-			return true;
-		end
-		
-		drag = false;
+        if (movable) then
+            if (state) then
+                -- Check if we should move the window around.
+                if (y <= headerHeight + 2) and (y >= 0) and (x >= 0) and (x <= width) then
+                    drag = true;
+                    dOffX, dOffY = x, y;
+                else
+                    -- Check if we should resize the window.
+                    dispatchResizeQuantors(
+                        x, y, width, height,
+                        function()
+                            -- Left.
+                            resizeStateLeft = true;
+                        end,
+                        function()
+                            -- Right.
+                            resizeStateRight = true;
+                        end,
+                        function()
+                            -- Top.
+                            resizeStateTop = true;
+                        end,
+                        function()
+                            -- Bottom.
+                            resizeStateBottom = true;
+                        end,
+                        function()
+                            -- Top left.
+                            resizeStateTop = true;
+                            resizeStateLeft = true;
+                        end,
+                        function()
+                            -- Bottom left.
+                            resizeStateBottom = true;
+                            resizeStateLeft = true;
+                        end,
+                        function()
+                            -- Top right.
+                            resizeStateTop = true;
+                            resizeStateRight = true;
+                        end,
+                        function()
+                            -- Bottom right.
+                            resizeStateBottom = true;
+                            resizeStateRight = true;
+                        end
+                    );
+                    
+                    if (resizeStateTop) or (resizeStateBottom) or (resizeStateLeft) or (resizeStateRight) then
+                        resizeCursorStartX, resizeCursorStartY = getParent().getMousePosition();
+                        resizeMetricPosX, resizeMetricPosY = getPosition();
+                        resizeMetricWidth = width;
+                        resizeMetricHeight = height;
+                        doResize = true;
+                    end
+                end
+            else
+                -- Disable any occuring drag.
+                drag = false;
+                
+                -- Disable any occuring resize.
+                resizeStateTop = false;
+                resizeStateLeft = false;
+                resizeStateBottom = false;
+                resizeStateRight = false;
+                doResize = false;
+            end
+        end
+        
 		return true;
 	end
 	
-	function window.mousemove()
-		if not (drag) then return true; end;
-		
-		local _x, _y = getParent().getMousePosition();
-		
-        if (_x) then
-            setPosition(_x - dOffX, _y - dOffY);
+	function window.mousemove(localX, localY)
+        local _x, _y = getParent().getMousePosition();
+        
+		if (drag) then
+            if (didSetRenderFunctor) then
+                setMouseRenderFunctor(false);
+                
+                didSetRenderFunctor = false;
+            end
+            
+            if (_x) then
+                setPosition(_x - dOffX, _y - dOffY);
+            end
+            
+            return true;
+        end
+        
+        -- Update metrics.
+        if (resizeStateTop) or (resizeStateBottom) then
+            local cursorOffY = ( _y - resizeCursorStartY );
+        
+            if (resizeStateTop) then                
+                local newHeight = math.max( headerHeight + 10, resizeMetricHeight - cursorOffY );
+                local newY = ( resizeMetricPosY + resizeMetricHeight - newHeight );
+                
+                setHeight( newHeight );
+                setPosition( x, newY );
+            elseif (resizeStateBottom) then
+                local newHeight = math.max( headerHeight + 10, resizeMetricHeight + cursorOffY );
+                
+                setHeight( newHeight );
+            end
+        end
+        
+        if (resizeStateLeft) or (resizeStateRight) then
+            local cursorOffX = ( _x - resizeCursorStartX );
+            
+            if (resizeStateLeft) then
+                local newWidth = math.max( headerHeight + 10, resizeMetricWidth - cursorOffX );
+                local newX = ( resizeMetricPosX + resizeMetricWidth - newWidth );
+                
+                setWidth( newWidth );
+                setPosition( newX, y );
+            elseif (resizeStateRight) then
+                local newWidth = math.max( headerHeight + 10, resizeMetricWidth + cursorOffX );
+                
+                setWidth( newWidth );
+            end
+        end
+        
+        -- Detect if we are on the margin, if we allow resizing.
+        -- Then we want to show a special mouse cursor.
+        local renderFunctor = false;
+        local renderFunctorWidth, renderFunctorHeight;
+        
+        local cursorLongDimm = 23;
+        
+        local doShowRightCursor = false;
+        local doShowTopCursor = false;
+        local doShowLeftCursor = false;
+        local doShowBottomCursor = false;
+        local doShowDiagTopLeftCursor = false;
+        local doShowDiagTopRightCursor = false;
+        local doShowDiagBottomLeftCursor = false;
+        local doShowDiagBottomRightCursor = false;
+        local hasCursor = false;
+        
+        -- First show cursor depending on resize state.
+        if (resizeStateTop) then
+            if (resizeStateLeft) then
+                doShowDiagTopLeftCursor = true;
+            elseif (resizeStateRight) then
+                doShowDiagTopRightCursor = true;
+            else
+                doShowTopCursor = true;
+            end
+            
+            hasCursor = true;
+        elseif (resizeStateBottom) then
+            if (resizeStateLeft) then
+                doShowDiagBottomLeftCursor = true;
+            elseif (resizeStateRight) then
+                doShowDiagBottomRightCursor = true;
+            else
+                doShowBottomCursor = true;
+            end
+            
+            hasCursor = true;
+        else
+            if (resizeStateLeft) then   
+                doShowLeftCursor = true;
+                hasCursor = true;
+            elseif (resizeStateRight) then
+                doShowRightCursor = true;
+                hasCursor = true;
+            end
+        end
+        
+        if not (hasCursor) then
+            if (allowCursorResize) then
+                dispatchResizeQuantors(
+                    localX, localY, width, height,
+                    function()
+                        -- Left side.
+                        doShowLeftCursor = true;
+                        hasCursor = true;
+                    end,
+                    function()
+                        -- Right side.
+                        doShowRightCursor = true;
+                        hasCursor = true;
+                    end,
+                    function()
+                        -- Top side.
+                        doShowTopCursor = true;
+                        hasCursor = true;
+                    end,
+                    function()
+                        -- Bottom side.
+                        doShowBottomCursor = true;
+                        hasCursor = true;
+                    end,
+                    function()
+                        -- Top left.
+                        doShowDiagTopLeftCursor = true;
+                        hasCursor = true;
+                    end,
+                    function()
+                        -- Bottom left.
+                        doShowDiagBottomLeftCursor = true;
+                        hasCursor = true;
+                    end,
+                    function()
+                        -- Top right,
+                        doShowDiagTopRightCursor = true;
+                        hasCursor = true;
+                    end,
+                    function()
+                        -- Bottom right.
+                        doShowDiagBottomRightCursor = true;
+                        hasCursor = true;
+                    end
+                );
+            end
+        end
+        
+        if (doShowLeftCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x + 3, y, width, height, straightResizeCursor,
+                    90, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm / 2;
+            renderFunctorHeight = cursorLongDimm;
+        elseif (doShowRightCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x - 3, y, width, height, straightResizeCursor,
+                    90, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm / 2;
+            renderFunctorHeight = cursorLongDimm;
+        elseif (doShowTopCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x, y + 3, width, height, straightResizeCursor,
+                    0, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm / 2;
+            renderFunctorHeight = cursorLongDimm;
+        elseif (doShowBottomCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x, y - 3, width, height, straightResizeCursor,
+                    0, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm / 2;
+            renderFunctorHeight = cursorLongDimm;
+        elseif (doShowDiagTopLeftCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x + 3, y + 3, width, height, diagResizeCursor,
+                    90, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm;
+            renderFunctorHeight = cursorLongDimm;
+        elseif (doShowDiagBottomLeftCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x + 3, y - 3, width, height, diagResizeCursor,
+                    0, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm;
+            renderFunctorHeight = cursorLongDimm;
+        elseif (doShowDiagTopRightCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x - 3, y + 3, width, height, diagResizeCursor,
+                    0, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm;
+            renderFunctorHeight = cursorLongDimm;
+        elseif (doShowDiagBottomRightCursor) then
+            renderFunctor = function(x, y, width, height)
+                dxDrawImage(
+                    x - 3, y - 3, width, height, diagResizeCursor,
+                    90, 0, 0, tocolor(255, 255, 255, 255), true
+                );
+            end
+            
+            renderFunctorWidth = cursorLongDimm;
+            renderFunctorHeight = cursorLongDimm;
+        end
+        
+        if (renderFunctor) then
+            setMouseRenderFunctor(renderFunctor, renderFunctorWidth, renderFunctorHeight);
+            
+            didSetRenderFunctor = true;
+        elseif (didSetRenderFunctor) then
+            setMouseRenderFunctor(false);
+            
+            didSetRenderFunctor = false;
         end
         
 		return true;

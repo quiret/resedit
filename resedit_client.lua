@@ -133,7 +133,7 @@ function showMessageBox(msg, title, setting)
 	if (title) then
 		msgBox.setText(title);
 	end
-	
+    
     return msgBox;
 end
 
@@ -3805,6 +3805,32 @@ function showResourceGUI(bShow)
 				
 				return true;
 			end
+            
+            function dxRoot.present()
+                super();
+                
+                -- We want to draw our mouse cursor, if there is a special one.
+                local hierarchy = dxRoot.getHierarchy();
+                
+                local mouseFunctor, functorWidth, functorHeight = hierarchy.getMouseRenderFunctor();
+                
+                if (mouseFunctor) then
+                    setCursorAlpha(0);
+                    
+                    -- Render a special mouse cursor.
+                    local mouseX = mouseX;
+                    local mouseY = mouseY;
+                    
+                    local mouseStartX = ( mouseX - functorWidth / 2 );
+                    local mouseStartY = ( mouseY - functorHeight / 2 );
+                    
+                    mouseFunctor(mouseStartX, mouseStartY, functorWidth, functorHeight);
+                else
+                    setCursorAlpha(255);
+                end
+                
+                return true;
+            end
 			
 			if not (greenBuild) then
 				-- We compiled dxElements within resedit; handle it

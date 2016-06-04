@@ -162,8 +162,15 @@ local function createDXHierarchy()
         local outbreakMode = false;
         local supportAlpha = false;
         local disabled = false;
+        local extra_top = 0;
+        local extra_left = 0;
+        local extra_right = 0;
+        local extra_bottom = 0;
         local blend_r, blend_g, blend_b, blend_a;
         local blendColor;
+        local cursorRenderFunctor = false;
+        local cursorRenderWidth = 0;
+        local cursorRenderHeight = 0;
         local drawingOrder = {};
         local captAlwaysOnTop = {};
         local noncaptive = {};
@@ -315,6 +322,9 @@ local function createDXHierarchy()
         end
         
         function element.setSize(w, h)
+            w = floor(w);
+            h = floor(h);
+        
             if (width == w) and (height == h) then return false; end;
         
             if not (triggerEvent("onSize", w, h)) then return false; end;
@@ -340,6 +350,35 @@ local function createDXHierarchy()
             return true;
         end
         
+        function element.setExtraMargin(top, left, bottom, right)
+            extra_top = top;
+            extra_left = left;
+            extra_bottom = bottom;
+            extra_right = right;
+            
+            updateMouse();
+            return true;
+        end
+        
+        function element.getExtraMargin()
+            return extra_left, extra_top, extra_right, extra_bottom;
+        end
+        
+        function element.setMouseRenderFunctor(functor, functorWidth, functorHeight)
+            cursorRenderFunctor = functor;
+            cursorRenderWidth = functorWidth;
+            cursorRenderHeight = functorHeight;
+            return true;
+        end
+        
+        function element.getMouseRenderFunctor()
+            if (cursorRenderFunctor) then
+                return cursorRenderFunctor, cursorRenderWidth, cursorRenderHeight;
+            end
+            
+            return false;
+        end
+        
         function element.setBlendColor(r, g, b, a)
             if not (a) then
                 a = 0xFF;
@@ -360,7 +399,7 @@ local function createDXHierarchy()
         end
         
         function element.isInLocalArea(posX, posY)
-            return (-1 < posX) and (-1 < posY) and (posX <= width) and (posY <= height);
+            return (-extra_left <= posX) and (-extra_top <= posY) and (posX <= width + extra_right) and (posY <= height + extra_bottom);
         end
         
         function element.isHit(offX, offY)
@@ -441,13 +480,7 @@ local function createDXHierarchy()
                 mouseleave();
                 
                 -- Update the mouse for fluent controls
-                if not (mouseElement) then
-                    local mouseX, mouseY = dx_root.getAbsoluteMousePosition();
-                    
-                    if (mouseX) then
-                        hierarchy.handleMouseMove(mouseX, mouseY);
-                    end
-                end
+                hierarchy.updateMouse();
             end
 
             dropFocus();
@@ -971,18 +1004,18 @@ local function createDXHierarchy()
             
                 if not (mouseElement == element) then
                     if (mouseElement) then
-                        if not (mouseElement.triggerEvent("onMouseLeave")) then return false; end;
+                        mouseElement.triggerEvent("onMouseLeave");
                         
                         mouseElement.mouseleave();
                     end
                     
                     mouseElement = element;
                     
-                    if not (triggerEvent("onMouseEnter")) then return false; end;
+                    triggerEvent("onMouseEnter");
                     mouseenter();
                 end
                 
-                if not (triggerEvent("onMouseMove", offX, offY)) then return false; end;
+                triggerEvent("onMouseMove", offX, offY);
                 
                 mousemove(offX, offY);
                 return true;
@@ -991,6 +1024,16 @@ local function createDXHierarchy()
             local posX, posY = mouse.getPosition();
             
             return mouse.handleMouseMove(offX - posX, offY - posY);
+        end
+        
+        function element.scanForElement(offX, offY)
+            local subElem = getElementAtOffset(offX, offY);
+            
+            if not (subElem) then return element; end;
+            
+            local posX, posY = subElem.getPosition();
+            
+            return subElem.scanForElement(offX - posX, offY - posY);
         end
         
         function element.mouseclick(button, state, offX, offY)
@@ -1308,6 +1351,7 @@ local function createDXHierarchy()
                 { "setSize", "number", "number" },
                 { "setWidth", "number" },
                 { "setHeight", "number" },
+                { "setExtraMargin", "number", "number", "number", "number" },
                 { "setBlendColor", "number", "number", "number", { "opt", "number" } },
                 { "isInLocalArea", "number", "number" },
                 { "isHit", "number", "number" },
@@ -1473,6 +1517,70 @@ local function createDXHierarchy()
         return dx_root.handleMouseMove(x, y);
     end
     
+    function hierarchy.updateMouse()
+        if (mouseElement) and (mouseElement.isDragging()) then
+            return;
+        end
+        
+        local mouseX, mouseY = dx_root.getAbsoluteMousePosition();
+        
+        local curRootMouseElement = false;
+        
+        do
+            local curTopMouseElement = dx_root.getTopElementAtOffset(mouseX, mouseY);
+        
+            if (curTopMouseElement) then
+                curRootMouseElement = curTopMouseElement;
+            end
+            
+            if not (dxInterface.isMouseObstructed(mouseX, mouseY)) then
+                if not (curMouseElement) then
+                    local regMouseElement = dx_root.getElementAtOffset(mouseX, mouseY);
+                    
+                    if (regMouseElement) then
+                        curRootMouseElement = regMouseElement;
+                    end
+                end
+            end
+        end
+        
+        --.If we have found a element on the dx_root layer, we must scan inside of it aswell.
+        local curMouseElement = false;
+        
+        if (curRootMouseElement) then
+            local posX, posY = curRootMouseElement.getPosition();
+        
+            curMouseElement = curRootMouseElement.scanForElement(mouseX - posX, mouseY - posY);
+        end
+        
+        if not (curMouseElement == mouseElement) then
+            if (mouseElement) then
+                mouseElement.triggerEvent("onMouseLeave");
+                
+                mouseElement.mouseleave();
+                
+                mouseElement = false;
+            end
+            
+            if (curMouseElement) then
+                mouseElement = curMouseElement;
+            
+                curMouseElement.triggerEvent("onMouseEnter");
+                
+                curMouseElement.mouseenter();
+                
+                -- Signal activity with a mouse move.
+                local screenX, screenY = curMouseElement.getScreenPosition();
+                
+                local localMouseX = mouseX - screenX;
+                local localMouseY = mouseY - screenY;
+                
+                curMouseElement.triggerEvent("onMouseMove", localMouseX, localMouseY);
+                curMouseElement.mousemove(localMouseX, localMouseY);
+            end
+        end
+    end
+    
     function hierarchy.handleKeyInput(button, down, isInput)
         if not (activeElement) then return false; end;
         
@@ -1503,6 +1611,14 @@ local function createDXHierarchy()
         
         dx_root.dereference();
         return true;
+    end
+    
+    function hierarchy.getMouseRenderFunctor()
+        if (mouseElement) then
+            return mouseElement.getMouseRenderFunctor();
+        end
+        
+        return false;
     end
     
     -- Create the hierarchy root element.

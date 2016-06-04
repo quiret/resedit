@@ -45,6 +45,8 @@
     <file src="resedit_gdk/images/arrow_r.png" type="client" />
     <file src="resedit_gdk/images/arrow_u.png" type="client" />
     <file src="resedit_gdk/images/check.png" type="client" />
+    <file src="resedit_gdk/images/diag_resize.png" type="client" />
+    <file src="resedit_gdk/images/straight_resize.png" type="client" />
 
     <script src="guithemes_client.lua" type="client" />
     <script src="downloadmanager_client.lua" type="client" />

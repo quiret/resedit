@@ -3,6 +3,15 @@
 local dxRoot = dxRoot;
 
 function openScript(resource, scriptPath, lineNumberOpt)
+    -- Do some typechecking, since IIYAMA suggested to do that.
+    if not (type(resource) == "string") or not (type(scriptPath) == "string") then
+        return false, "invalid arguments";
+    end
+    
+    if not (lineNumberOpt == nil) and not (type(lineNumberOpt) == "number") then
+        return false, "invalid line number argument";
+    end
+
     -- Before attempting anything volatile, see if a resource with that script even exists.
     if not (doesResourceHaveScript(resource, scriptPath)) then
         return false, "resource or script unavailable";
