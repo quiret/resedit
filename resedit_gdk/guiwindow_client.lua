@@ -407,9 +407,11 @@ function createWindow(parent)
         
             if (resizeStateTop) then                
                 local newHeight = math.max( headerHeight + 10, resizeMetricHeight - cursorOffY );
-                local newY = ( resizeMetricPosY + resizeMetricHeight - newHeight );
                 
                 setHeight( newHeight );
+                
+                local newY = ( resizeMetricPosY + resizeMetricHeight - window.height );
+                
                 setPosition( x, newY );
             elseif (resizeStateBottom) then
                 local newHeight = math.max( headerHeight + 10, resizeMetricHeight + cursorOffY );
@@ -423,9 +425,11 @@ function createWindow(parent)
             
             if (resizeStateLeft) then
                 local newWidth = math.max( headerHeight + 10, resizeMetricWidth - cursorOffX );
-                local newX = ( resizeMetricPosX + resizeMetricWidth - newWidth );
                 
                 setWidth( newWidth );
+                
+                local newX = ( resizeMetricPosX + resizeMetricWidth - window.width );
+                
                 setPosition( newX, y );
             elseif (resizeStateRight) then
                 local newWidth = math.max( headerHeight + 10, resizeMetricWidth + cursorOffX );

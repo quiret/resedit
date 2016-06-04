@@ -532,6 +532,11 @@ function createListBox(parent)
         return true;
     end
     
+    function listbox.giveScrollFocus()
+        scrollpane.giveFocus();
+        return true;
+    end
+    
     function listbox.isHit(x, y)
         return (y <= 20);
     end

@@ -166,6 +166,8 @@ local function createDXHierarchy()
         local extra_left = 0;
         local extra_right = 0;
         local extra_bottom = 0;
+        local minWidth = 0;
+        local minHeight = 0;
         local blend_r, blend_g, blend_b, blend_a;
         local blendColor;
         local cursorRenderFunctor = false;
@@ -325,6 +327,9 @@ local function createDXHierarchy()
             w = floor(w);
             h = floor(h);
         
+            w = math.max(w, minWidth);
+            h = math.max(h, minHeight);
+        
             if (width == w) and (height == h) then return false; end;
         
             if not (triggerEvent("onSize", w, h)) then return false; end;
@@ -338,6 +343,26 @@ local function createDXHierarchy()
         
         function element.getSize()
             return width, height;
+        end
+        
+        function element.setMinimumSize(w, h)
+            minWidth = w;
+            minHeight = h;
+            
+            -- Make sure we meet this criteria.
+            if (width < minWidth) then
+                setWidth(minWidth);
+            end
+            
+            if (height < minHeight) then
+                setHeight(minHeight);
+            end
+            
+            return true;
+        end
+        
+        function element.getMinimumSize()
+            return minWidth, minHeight;
         end
         
         function element.setWidth(w)

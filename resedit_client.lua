@@ -1077,96 +1077,109 @@ function showResourceSelect(bShow)
             
             pSelectGUI = {};
             
-            local window = guiCreateWindow((screenWidth - guiW) / 2, (screenHeight - guiH) / 2, guiW, guiH, "Select Resource", false);
+            local window = themeCreateWindow();
+            window.setAllowCursorResize(true);
+            window.setPosition((screenWidth - guiW) / 2, (screenHeight - guiH) / 2);
+            window.setText("Select Resource");
+            local winRoot = window.getRoot();
+            
             pSelectGUI.window = window;
             
-            local pList = guiCreateGridList(20, 40, guiW - 40, guiH - 60, false, window);
-			guiSetProperty(pList, "ColumnsMovable", "False");
-			guiSetProperty(pList, "ColumnsSizable", "False");
-            guiGridListAddColumn(pList, "Resource", 0.3);
-            guiGridListAddColumn(pList, "Real Name", 0.4);
+            local searchEditBox = themeCreateEditBox(winRoot);
+            searchEditBox.setPosition(5, 5);
             
+            local pList = themeCreateListBox(winRoot);
+            pList.setPosition(5, 25);
+            
+            pSelectGUI.resList = pList;
+            
+            local resColIndex = pList.addColumn();
+            pList.setColumnWidth(resColIndex, 150);
+            pList.setColumnName(resColIndex, "Resource");
+            
+            local realNameColIndex = pList.addColumn();
+            pList.setColumnWidth(400);
+            pList.setColumnName(realNameColIndex, "Real Name");
+
             local function resizeColumn(column, width)
-                local n = 0;
-                local rowcount = guiGridListGetRowCount(pList);
+                local minWidth = pList.getMinimumColumnWidth(column);
                 
-                while (n < rowcount) do
-                    local curWidth = dxGetTextWidth(guiGridListGetItemText(pList, n, column)) + 20;
-                    
-                    if (width < curWidth) then
-                        width = curWidth;
-                    end
-                
-                    n = n + 1;
-                end
-                
-                return guiGridListSetColumnWidth(pList, column, width, false);
+                pList.setColumnWidth(column, math.max(minWidth + 20, width));
             end
             
             function pSelectGUI.update()
-                guiGridListClear(pList);
+                pList.clearRows();
 				
+                local filterText = searchEditBox.getText();
+                
                 local m,n;
-                local sort = guiGetProperty(pList, "SortDirection");
-                
-                guiSetProperty(pList, "SortDirection", "");
-                
+
                 for m,n in ipairs(resourceList) do
-                    if (doWeHaveAccessTo("resources", n)) then
-                        local resource = resourceData[n];
-                        local row = guiGridListAddRow(pList);
-                        
-                        guiGridListSetItemText(pList, row, 1, n, false, false);
-                        guiGridListSetItemText(pList, row, 2, resource.realname, false, false);
-                        
-                        guiGridListSetItemData(pList, row, 1, n);
+                    if (string.find(n, filterText, 1, true)) then
+                        if (doWeHaveAccessTo("resources", n)) then
+                            local resource = resourceData[n];
+                            local row = pList.addRow();
+                            
+                            pList.setItemText(resColIndex, row, n);
+                            pList.setItemText(realNameColIndex, row, resource.realname);
+                        end
                     end
                 end
 				
-                resizeColumn(1, 100);
-                resizeColumn(2, 50);
-                
-                guiSetProperty(pList, "SortDirection", sort);
+                resizeColumn(resColIndex, 100);
+                resizeColumn(realNameColIndex, 50);
                 return true;
             end
             
-            addEventHandler("onClientGUIClick", pList, function(button, state, x, y)
-                    local row=guiGridListGetSelectedItem(pList);
-                    
-                    if (row == -1) then return false; end;
-
-                    local res = guiGridListGetItemData(pList, row, 1);
-                    
-                    currentResource = resourceData[res];
-
-                    outputDebugString("Selected resource '" .. res .. "'");
-					
-					mainGUI.updateResource();
-                    
-                    showResourceSelect(false);
-                end, false
-            );
+            function searchEditBox.events.onEditBoxChanged()
+                pSelectGUI.update();
+            end
             
-            addEventHandler("onClientGUISize", window, function()
-                    local width, height = guiGetSize(window, false);
-                    
-                    width = math.max(guiW, width);
-                    height = math.max(guiH, height);
-                    
-                    guiSetSize(window, width, height, false);
-                    guiSetSize(pList, width - 40, height - 60, false);
-                end, false
-            );
+            function pList.events.onListBoxSelect(row)
+                local res = pList.getItemText(resColIndex, row);
+                
+                currentResource = resourceData[res];
+
+                outputDebugString("Selected resource '" .. res .. "'");
+                
+                mainGUI.updateResource();
+                
+                showResourceSelect(false);
+            end
+            
+            -- The fabled close button.
+            local closeButton = themeCreateButton(winRoot);
+            closeButton.setText("Close");
+            
+            function closeButton.events.onPress()
+                showResourceSelect(false);
+            end
+            
+            function window.setSize(w, h)
+                if not (super(w, h)) then return false; end;
+                
+                -- Update ourselves.
+                searchEditBox.setSize(winRoot.width - 10, 20);
+                pList.setSize(winRoot.width - 10, winRoot.height - 50);
+                closeButton.setPosition((winRoot.width - winRoot.width / 2) / 2, winRoot.height - 23);
+                closeButton.setSize(winRoot.width / 2, 20);
+                return true;
+            end
+            
+            window.setSize(guiW, guiH);
+            window.setMinimumSize(guiW / 2, guiH / 2);
         else
-            guiSetVisible(pSelectGUI.window, true);
-            guiBringToFront(pSelectGUI.window);
+            pSelectGUI.window.setVisible(true);
+            pSelectGUI.window.moveToFront();
         end
+        
+        pSelectGUI.resList.giveScrollFocus();
         
         -- Update it
         pSelectGUI.update();
     else
         if (pSelectGUI) then
-            guiSetVisible(pSelectGUI.window, false);
+            pSelectGUI.window.setVisible(false);
         end
     end
     return true;
@@ -3885,7 +3898,6 @@ function showResourceGUI(bShow)
             showCursor(false);
             showChat(true);
             showFileManager(false);
-            showResourceSelect(false);
             showScriptDebug(false);
 			showControlPanel(false);
 			showPasteGUI(false);
