@@ -17,7 +17,7 @@ local version = getVersion();
 local accountData={};
 local defaultAccount = {};
 
-local transactionPacketBytes=1200;
+local transactionPacketBytes = 1200;
 
 -- Temporily disable instruction count hook
 debug.sethook(nil);
@@ -26,7 +26,11 @@ debug.sethook(nil);
 local pAccessConfig = xmlLoadFile("access.xml");
 
 if not (pAccessConfig) then
-	pAccessConfig = xmlCreateFile("access.xml", "access");
+	local xml = xmlLoadFile("default/access.xml");
+    
+    pAccessConfig = xmlCopyFile(xml, "access.xml");
+    
+    xmlUnloadFile(xml);
 end
 
 local pConfig = xmlLoadFile("config.xml");
@@ -40,7 +44,7 @@ if not (pConfig) then
 end
 
 function getFileExtension(src)
-    local lastOffset;
+    local lastOffset = false;
     local begin, last = string.find(src, "[.]");
 
     while (begin) do
@@ -48,7 +52,29 @@ function getFileExtension(src)
         begin, last = string.find(src, "[.]", lastOffset);
     end
     
+    if not (lastOffset) then
+        return false;
+    end
+    
     return string.sub(src, lastOffset, string.len(src));
+end
+
+local function inheritAccountDefaults(account)
+	local editor = account.editor;
+	local controlPanel = account.controlPanel;
+	local resources = account.resources;
+	
+	for m,n in pairs(defaultAccount.editor) do
+		editor[m] = n;
+	end
+	
+	for m,n in pairs(defaultAccount.controlPanel) do
+		controlPanel[m] = n;
+	end
+	
+	for m,n in pairs(defaultAccount.resources) do
+		resources[m] = n;
+	end
 end
 
 local function initAccountDependencies(account)
@@ -83,30 +109,46 @@ local function initAccountDependencies(account)
 		
 		return true;
 	end
+    
+    function account.clearRights()
+        -- Set all rights to unknown.
+        account.controlPanel = {}
+        account.editor = {}
+        account.resources = {}
+        
+        -- Inherit the defaults.
+        inheritAccountDefaults(account);
+        
+        -- Now the access rights are at their clean state.
+        return true;
+    end
 end
 
 -- Set up pseudo default account
 defaultAccount = {
-	user = "guest",
-	
-	editor = {
+	user = "guest"
+};
+initAccountDependencies(defaultAccount);
+
+local function initDefaultAccountRights()
+	defaultAccount.editor = {
 		access = false,
 		objectManagement = false,
 		scriptLock = false,
 		createResource = false,
 		removeResource = false
-	},
-	controlPanel = {
+	};
+	defaultAccount.controlPanel = {
 		access = false,
 		requirePassword = true
-	},
-	resources = {
+	};
+	defaultAccount.resources = {
 		resedit = false
-	}
-};
-initAccountDependencies(defaultAccount);
+	};
+end
+initDefaultAccountRights();
 
-function createAccountData(user)
+local function createAccountData(user)
 	local account = {
 		user = user,
 		
@@ -117,21 +159,7 @@ function createAccountData(user)
 	};
 	
 	-- Inherit defaultAccount's settings
-	local editor = account.editor;
-	local controlPanel = account.controlPanel;
-	local resources = account.resources;
-	
-	for m,n in pairs(defaultAccount.editor) do
-		editor[m] = n;
-	end
-	
-	for m,n in pairs(defaultAccount.controlPanel) do
-		controlPanel[m] = n;
-	end
-	
-	for m,n in pairs(defaultAccount.resources) do
-		resources[m] = n;
-	end
+    inheritAccountDefaults(account);
 	
 	initAccountDependencies(account);
 	
@@ -139,48 +167,62 @@ function createAccountData(user)
 	return account;
 end
 
+local function findCreateAccountData(user)
+    local alreadyExists = accountData[user];
+    
+    if (alreadyExists) then
+        return alreadyExists;
+    end
+    
+    return createAccountData(user);
+end
+
 local config;
 local access;
 local controlPanel;
 
-local function loadConfig()
-	local m,n;
+local function parseAccessConfigAccountNode(account, node)
+    local j,k;
 
-	config = xmlGetNode(pConfig);
+    for j,k in ipairs(node.children) do
+        if (k.name == "right") then
+            account.addRight(k.attr.object, k.attr.allow == "true");
+        end
+    end
+end
+
+local function loadAccessConfig()
+    local m,n;
+
 	access = xmlGetNode(pAccessConfig);
-	controlPanel = findCreateNode(config, "controlPanel");
-	
+    
 	-- Load up all access configurations
 	accessData = {};
 	
-	n = access.children[1];
-	
 	for m,n in ipairs(access.children) do
 		if (n.name == "account") then
-			local account = createAccountData(n.attr.user);
-			local j,k;
-			
-			for j,k in ipairs(n.children) do
-				if (k.name == "right") then
-					account.addRight(k.attr.object, k.attr.allow == "true");
-				end
-			end
+			local account = findCreateAccountData(n.attr.user);
+            
+            parseAccessConfigAccountNode(account, n);
 		elseif (n.name == "default") then
-			local j,k;
-			
-			for j,k in ipairs(n.children) do
-				if (k.name == "right") then
-					defaultAccount.addRight(k.attr.object, k.attr.allow == "true");
-				end
-			end
+			parseAccessConfigAccountNode(defaultAccount, n);
 		end
 	end
+    
+    -- If you are reloading account rights, you should update the clients and their local copies aswell.
+end
+loadAccessConfig();
+
+local function loadConfig()
+	config = xmlGetNode(pConfig);
+	controlPanel = findCreateNode(config, "controlPanel");
 end
 loadConfig();
 
 local function initPlayer(client)
 	local sessions = {};
     local pData = {
+        isReady = false,
 		isEditing = false,
 		editElement = false,
 		controlSession = false,
@@ -274,29 +316,63 @@ addEventHandler("onPlayerJoin", root, function()
     end
 );
 
-function updateClientAccess(client)
+local function updateClientAccess(client)
     local m,n;
     local resources = getResources();
     local pData = playerData[client];
-    local access = pData.access;
+    local playerAccess = pData.access;
+    
+    pData.isReady = true;
     
 	-- We simply send the account
-    access.account = pData.account;
+    playerAccess.account = pData.account;
 	
-    access.resources = {};
+    playerAccess.resources = {};
     
     for m,n in ipairs(resources) do
-        access.resources[getResourceName(n)] = checkResourceAccess(client, n);
+        playerAccess.resources[getResourceName(n)] = checkResourceAccess(client, n);
     end
 	
 	-- Overwrite this with the account settings
 	for m,n in pairs(pData.account.resources) do
-		access.resources[m] = n;
+		playerAccess.resources[m] = n;
 	end
     
     -- Send this table to the client
-    triggerClientEvent(client, "onClientAccessRightsUpdate", root, access);
+    triggerClientEvent(client, "onClientAccessRightsUpdate", root, playerAccess);
     return true;
+end
+
+local function reloadAccessConfig()
+    -- The server requested to reload our access configuration.
+    -- So let's do that.
+    
+    -- Initialize all globals to defaults that are populated by access.xml.
+    initDefaultAccountRights();
+    
+    -- Reset all other registered accounts.
+    for m,n in pairs(accountData) do
+        n.clearRights();
+    end
+    
+    -- Load new configuration from disk.
+    xmlUnloadFile(pAccessConfig);
+    
+    pAccessConfig = xmlLoadFile("access.xml");
+    
+    loadAccessConfig();
+    
+    -- Now update the network players.
+    local connectedPlayers = getElementsByType("player");
+    
+    for m,n in ipairs(connectedPlayers) do
+        -- Player has to be initialized first of course.
+        local pData = playerData[n];
+        
+        if (pData.isReady) then
+            updateClientAccess(n);
+        end
+    end
 end
 
 addEventHandler("onPlayerLogin", root, function(previous, account, auto)
@@ -1287,6 +1363,17 @@ addEventHandler("onResourceSet", root, function(resource, cmd, ...)
 		end
 		
 		res.update();
+    end
+);
+
+addCommandHandler("resedit_accupd", function(sender)
+        if (hasObjectPermissionTo(sender, "general.ModifyOtherObjects") == false) then
+            return false;
+        end
+
+        outputDebugString("reloading resedit access config...");
+
+        reloadAccessConfig();
     end
 );
 

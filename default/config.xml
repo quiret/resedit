@@ -438,8 +438,8 @@
                 <setElementVisibleTo returnType="bool" arguments="element element, player visibleTo, bool visible"></setElementVisibleTo>
                 <getElementSyncer returnType="player" arguments="element element"></getElementSyncer>
                 <getCancelReason returnType="string" arguments=""></getCancelReason>
-                <triggerClientEvent returnType="bool" arguments="string name, element source, [ ... ]" description="Calls an remove client event"></triggerClientEvent>
-                <triggerClientEvent returnType="bool" arguments="player client, string name, element source, [ ... ]" description="Calls an remove client event for client only"></triggerClientEvent>
+                <triggerClientEvent returnType="bool" arguments="string name, element source, [ ... ]" description="Calls an remote client event"></triggerClientEvent>
+                <triggerClientEvent returnType="bool" arguments="player client, string name, element source, [ ... ]" description="Calls an remote client event for client only"></triggerClientEvent>
                 <createExplosion returnType="bool" arguments="float x, float y, float z, int type, [ player creator ]"></createExplosion>
                 <bindKey returnType="void" arguments="player player, string key, string state, function handler, [ ... ]"></bindKey>
                 <bindKey returnType="void" arguments="player player, string key, string state, string command, [ string arguments ]" description="Binds command to key and state.\nAllows the user to chage the key in settings."></bindKey>

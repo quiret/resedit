@@ -24,15 +24,24 @@ local editSessions={};
 
 local pObjectInfo=false;
 
+-- the object management casts a dependency on resedit in general.
+-- so make sure that the object management loads AFTER resedit components!
+local isEditorClientReady = isEditorClientReady;
+
 function canConfigureObject(element)
+    -- TODO: maybe start hedit from here.
+
     if (getElementType(element)=="vehicle") then
         return true;
     end
+    
     return false;
 end
 
 function showObjectGUI(bShow)
     if (bShow == true) then
+        if not (isEditorClientReady) then return false; end;
+    
         if not (pObjectInfo) then
             local screenWidth, screenHeight = guiGetScreenSize();
             local guiW,guiH=300,240;
@@ -160,6 +169,7 @@ end
 addEventHandler("onClientClick", getRootElement(), function(button, state, x, y, posX, posY, posZ, element)
         -- Check whether it is selecting object to edit
         if (bSelecting) then
+            if not (isEditorClientReady()) then return false; end;
             if not (element) then return false; end;
             if not (state=="down") then return false; end;
             
@@ -168,6 +178,7 @@ addEventHandler("onClientClick", getRootElement(), function(button, state, x, y,
             outputDebugString("Requesting object edit...");
         elseif (bObjectEdit) then
             if (state=="down") and (element==pEditObject) then
+                if not (isEditorClientReady()) then return false; end;
 				if (guiGetAtPosition(x, y)) then return true; end;
 			
                 outputDebugString("Moving element");
@@ -181,13 +192,13 @@ addEventHandler("onClientClick", getRootElement(), function(button, state, x, y,
 );
 
 addEventHandler("onClientKey", root, function(button, state)
+        if not (isEditorClientReady()) then return false; end;
 		if not (button == "lctrl") then return false; end;
-        if not (access) then return false; end;
-        if not (access.account.editor.objectManagement) then return false; end;
         
         if (mainGUI) and (mainGUI.visible) then return false; end;
         
         if (state) then
+            if not (access.account.editor.objectManagement) then return false; end;
             if (bObjectEdit) then return false; end;
             
             bSelecting=true;

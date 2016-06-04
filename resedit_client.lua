@@ -137,6 +137,15 @@ function showMessageBox(msg, title, setting)
     return msgBox;
 end
 
+local function isEditorClientReady()
+    if (access) then
+        return true;
+    end
+    
+    return false;
+end
+_G.isEditorClientReady = isEditorClientReady;
+
 function initLibrary()
 	library = {};
 end
@@ -1454,7 +1463,7 @@ function setEditorMode(mode)
 end
 
 -- Internal routine for color recalculation, is used by editor to generate colors
-function getColorFromToken(token)
+local function getColorFromToken(token)
 	local char = strbyte(token);
 
 	if (char == 34) then    -- '"'
@@ -1552,6 +1561,7 @@ end
 
 addEventHandler("onClientKey", root, function(button, state)
 		if not (state) then return false; end;
+        if not (isEditorClientReady()) then return false; end;
 		
 		if not (mainGUI) or not (mainGUI.visible) then
 			if (button == "F6") then
@@ -2993,7 +3003,7 @@ end
 
 function showResourceGUI(bShow)
     if (bShow == true) then
-        if not (access) then return false, "not initialized"; end;
+        if not (isEditorClientReady()) then return false, "not initialized"; end;
         
         -- Priviledge to open it
         if (access.account.editor.access == false) then
@@ -3891,7 +3901,8 @@ end
 
 addEvent("onClientAccessRightsUpdate", true);
 addEventHandler("onClientAccessRightsUpdate", root, function(accessTable)
-        access = accessTable;
+        -- When the client received their first access rights, it is ready.
+        _G.access = accessTable;
         outputDebugString("Received access rights");
         
         if (access.account.editor.access) then

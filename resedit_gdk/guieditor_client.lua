@@ -2163,29 +2163,36 @@ function createEditor(parent)
 				offY = offY + fontHeight;
 			end
 			
-			if (term >= info.offsetEnd + 1) then
-				local width = dxGetTextWidth(strsub(buffer, start, info.offsetEnd), charScale, charFont);
-			
-				dxDrawRectangle(info.width - width - viewX, offY, width + 8, fontHeight, highlightColor);
-				
-				line = line + 1;
-				offY = offY + fontHeight;
-				
-				info = lineInfo[line];
-				
-				while (line < maxLine) and (term > info.offsetEnd) do
-					dxDrawRectangle(-viewX, offY, info.width + 8, fontHeight, highlightColor);
-					
-					line = line + 1;
-					info = lineInfo[line];
-					
-					offY = offY + fontHeight;
-				end
-				
-				dxDrawRectangle(-viewX, offY, dxGetTextWidth(strsub(buffer, info.offset, term), charScale, charFont), fontHeight, highlightColor);
-			else
-				dxDrawRectangle(dxGetTextWidth(strsub(buffer, info.offset, start - 1), charScale, charFont) - viewX, offY, dxGetTextWidth(strsub(buffer, start, term), charScale, charFont), fontHeight, highlightColor);
-			end
+            if (term >= info.offset) then
+                if (term >= info.offsetEnd + 1) then
+                    local width = dxGetTextWidth(strsub(buffer, start, info.offsetEnd), charScale, charFont);
+                
+                    dxDrawRectangle(info.width - width - viewX, offY, width + 8, fontHeight, highlightColor);
+                    
+                    line = line + 1;
+                    offY = offY + fontHeight;
+                    
+                    info = lineInfo[line];
+                    
+                    while (line < maxLine) and (term > info.offsetEnd) do
+                        dxDrawRectangle(-viewX, offY, info.width + 8, fontHeight, highlightColor);
+                        
+                        line = line + 1;
+                        info = lineInfo[line];
+                        
+                        offY = offY + fontHeight;
+                    end
+                    
+                    dxDrawRectangle(-viewX, offY, dxGetTextWidth(strsub(buffer, info.offset, term), charScale, charFont), fontHeight, highlightColor);
+                else
+                    dxDrawRectangle(
+                        dxGetTextWidth(strsub(buffer, info.offset, start - 1), charScale, charFont) - viewX,
+                        offY,
+                        dxGetTextWidth(strsub(buffer, math.max(start, info.offset), term), charScale, charFont),
+                        fontHeight, highlightColor
+                    );
+                end
+            end
 		end
 		
 		-- Determine whether we render the cursor

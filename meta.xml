@@ -48,8 +48,8 @@
 
     <script src="guithemes_client.lua" type="client" />
     <script src="downloadmanager_client.lua" type="client" />
-    <script src="objectmanagement_client.lua" type="client" />
     <script src="resedit_client.lua" type="client" />
+    <script src="objectmanagement_client.lua" type="client" />
     <script src="debugapi_client.lua" type="client" />
     
     <!-- Configuration defaults !-->
