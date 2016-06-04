@@ -1,5 +1,6 @@
 -- Debug API exports for resedit.
 -- Use those if you want a quick interface for error detection and server maintenance.
+local dxRoot = dxRoot;
 
 function openScript(resource, scriptPath, lineNumberOpt)
     -- Before attempting anything volatile, see if a resource with that script even exists.
@@ -36,4 +37,8 @@ function openScript(resource, scriptPath, lineNumberOpt)
     end
     
     return true;
+end
+
+function isEditorDrawing()
+    return dxRoot.isVisible();
 end

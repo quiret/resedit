@@ -59,4 +59,5 @@
     
     <!-- Client-side export interface !-->
     <export function="openScript" type="client" />
+    <export function="isEditorDrawing" type="client" />
 </meta>

@@ -1575,7 +1575,9 @@ addEventHandler("onClientKey", root, function(button, state)
 			elseif (button == "F6") then
 				showResourceGUI(false);
 			elseif (button == "F5") then
-				xmlCreateEditor(config);
+                if not (xmlDoesEditorExistForNode(config)) then
+                    xmlCreateEditor(config);
+                end
 			elseif (button == "F4") then
 				if (useFileManager) then
 					showFileManager(true);
@@ -3684,16 +3686,19 @@ function showResourceGUI(bShow)
 				if (session) then
 					session.pulse();
                     
-                    -- Select the line anyway.
-                    local editor = session.getEditor();
-                    
-                    if (editor) then
-                        local beg, term = editor.getLine(lineNumOpt);
+                    if (lineNumOpt) then
+                        -- Select the line anyway.
+                        local editor = session.getEditor();
                         
-                        if (beg) then
-                            editor.setCursor(term + 1);
+                        if (editor) then
+                            local beg, term = editor.getLine(lineNumOpt);
+                            
+                            if (beg) then
+                                editor.setCursor(term + 1);
+                            end
                         end
                     end
+                    
 					return true;
 				end
 				

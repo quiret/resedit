@@ -761,6 +761,18 @@ function xmlCreateEditor(node)
     return xmleditor;
 end
 
+function xmlDoesEditorExistForNode(node)
+    local m,n;
+    
+    for m,n in pairs(xmleditors) do
+        if (n.node == node) then
+            return true;
+        end
+    end
+    
+    return false;
+end
+
 function xmlShowEditors(show)
     local m,n;
     

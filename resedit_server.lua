@@ -157,6 +157,18 @@ local function createAccountData(user)
 		
 		resources = {}
 	};
+    
+    function account.hasAccessTo(accGroup, itemId)
+        if (accGroup == "editor") then
+            return account.editor[ itemId ];
+        elseif (accGroup == "controlPanel") then
+            return account.controlPanel[itemId];
+        elseif (accGroup == "resources") then
+            return account.resources[itemId];
+        end
+        
+        return false;
+    end
 	
 	-- Inherit defaultAccount's settings
     inheritAccountDefaults(account);
@@ -281,7 +293,7 @@ local function initPlayer(client)
 		while (n <= #sessions) do
 			local session = sessions[n];
 		
-			if not (pData.access[session.resource]) or not (pData.access.editor.scriptLock) then
+			if not (pData.access[session.resource]) or not (pData.account.editor.scriptLock) then
 				session.script.unlink();
 			else
 				n = n + 1;
@@ -1042,12 +1054,6 @@ addEventHandler("onClientRequestResourceCreation", root, function(name, restype,
 			
             if not (pMeta) then
                 -- Resource bugged
-                return false;
-            end
-            
-            -- Check for deletion tag
-            if not (xmlFindChild(pMeta, "deleted", 0)) then
-                outputChatBox("Resource '"..name.."' already exists", client);
                 return false;
             end
         else
