@@ -1,3 +1,4 @@
 <config>
-    <controlPanel password="default"></controlPanel>
+    <controlPanel></controlPanel>
+    <general allowAuthorResourceAccess="true"></general>
 </config>

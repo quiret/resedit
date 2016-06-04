@@ -181,6 +181,7 @@ end
 
 local config;
 local access;
+local general;
 local controlPanel;
 
 local function parseAccessConfigAccountNode(account, node)
@@ -218,6 +219,7 @@ loadAccessConfig();
 local function loadConfig()
 	config = xmlGetNode(pConfig);
 	controlPanel = findCreateNode(config, "controlPanel");
+    general = findCreateNode(config, "general");
 end
 loadConfig();
 
@@ -907,6 +909,20 @@ addEventHandler("onClientControlPanelTerminate", root, function()
 	end
 );
 
+local function allowAuthorResourceAccess(client, resource)
+    if not (general.attr.allowAuthorResourceAccess == "true") then return false; end;
+    
+    local playerSerial = getPlayerSerial(client);
+    
+    if (playerSerial) then
+        if (playerSerial == resource.authorserial) then
+            return true;
+        end
+    end
+    
+    return false;
+end
+
 addEvent("onClientAddScript", true);
 addEventHandler("onClientAddScript", root, function(resource, filename, scripttype)
 		local pData = playerData[client];
@@ -918,7 +934,7 @@ addEventHandler("onClientAddScript", root, function(resource, filename, scriptty
 		
 		if not (res) then return false; end;
             
-		if not (res.authorserial == getPlayerSerial(client)) then
+		if not (allowAuthorResourceAccess(client, res)) then
             if not (pData.hasAccessTo("editor", "addScript")) then
                 outputChatBox("No permission to add scripts.", client);
                 return false;
@@ -992,7 +1008,7 @@ addEventHandler("onClientRemoveScript", root, function(resource, filename)
 		
 		if not (res) then return false; end
             
-		if not (res.authorserial == getPlayerSerial(client)) then
+		if not (allowAuthorResourceAccess(client, res)) then
             if not (pData.hasAccessTo("editor", "removeScript")) then
                 outputChatBox("No permission to remove scripts", client);
                 return false;
@@ -1136,7 +1152,7 @@ addEventHandler("onClientRequestResourceRemoval", root, function(resname)
 		end
 		
 		-- You can only remove your resources, or if you have admin
-		if not (res.authorserial == getPlayerSerial(client)) and not (pData.hasAccessTo("editor", "removeResource")) then
+		if not (allowAuthorResourceAccess(client, res)) and not (pData.hasAccessTo("editor", "removeResource")) then
 			outputChatBox("You do not have the permission to remove resource '"..resname.."'", client);
 			return false;
 		end
@@ -1163,7 +1179,7 @@ addEventHandler("onClientRequestStartResource", root, function(resource)
 			return false;
 		end
 
-        if not (res.authorserial == getPlayerSerial(client)) then
+        if not (allowAuthorResourceAccess(client, res)) then
             if not (hasObjectPermissionTo(client, "command.start")) then
                 outputChatBox("Invalid access (/start)", client);
                 return false;
@@ -1192,7 +1208,7 @@ addEventHandler("onClientRequestStopResource", root, function(resource)
 			return false;
 		end
         
-        if not (res.authorserial == getPlayerSerial(client)) then
+        if not (allowAuthorResourceAccess(client, res)) then
             if not (hasObjectPermissionTo(client, "command.stop")) then
                 outputChatBox("Invalid access (/stop)", client);
                 return false;
@@ -1391,7 +1407,7 @@ addEventHandler("onResourceSet", root, function(resource, cmd, ...)
         local args = {...};
 		local res = getResourceFromNameEx(resource);
 		
-        if not (res.authorserial == getPlayerSerial(client)) then
+        if not (allowAuthorResourceAccess(client, res)) then
             if not (checkSpecialResourceAccess(client, res.resource)) then
                 outputChatBox("Invalid access (" .. cmd .. ")", client);
                 return false;
@@ -1400,8 +1416,12 @@ addEventHandler("onResourceSet", root, function(resource, cmd, ...)
 		
 		if (cmd == "type") then
 			res.type = args[1];
+            
+            setResourceInfo(res.resource, "type", res.type);
 		elseif (cmd == "description") then
 			res.description = args[1];
+            
+            setResourceInfo(res.resource, "description", res.description);
 		end
 		
 		res.update();
@@ -1409,13 +1429,28 @@ addEventHandler("onResourceSet", root, function(resource, cmd, ...)
 );
 
 addCommandHandler("resedit_accupd", function(sender)
-        if (hasObjectPermissionTo(sender, "general.ModifyOtherObjects") == false) then
+        if not (isClientAdmin(sender)) then
             return false;
         end
 
         outputDebugString("reloading resedit access config...");
 
         reloadAccessConfig();
+    end
+);
+
+addCommandHandler("resedit_cfgupd", function(sender)
+        if not (isClientAdmin(sender)) then
+            return false;
+        end
+        
+        outputDebugString("reloading resedit main config...");
+        
+        xmlUnloadFile(pConfig);
+        
+        pConfig = xmlLoadFile("config.xml");
+        
+        loadConfig();
     end
 );
 

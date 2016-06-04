@@ -1,3 +1,29 @@
+If you like my tools, please check out Magic.TXD, the RenderWare TXD editor!
+http://www.gtamodding.com/wiki/Magic.TXD
+------------------------------------------------------
+Latest resedit is located at:
+https://github.com/quiret/resedit
+
+Feel free to contribute to the development of resedit. :)
+============================================================================
+
+VERSION 0.9.1
+	Bugfixes and improvements
+
+- improved resedit access management system
+- fixed a bug where you were kicked out of your script sessions after logging out
+- fixed a bug where editor highlighting would render glitches if the highlight moved out of view
+- added "addScript" and "removeScript" priviledges for more fine-tunibility
+- linked up resedit with the MTA ecosystem a little more (setResourceInfo)
+- added an ability to turn off author special priviledges in serverside config.xml
+- removed default password for control panel (upcoming feature)
+- fixed the annoyance where F5 would open many XML editors
+- added "isEditorDrawing" clientside export
+
+This is sort of a clean-up release. Should smoothen things somewhat.
+
+------------------------------------------------------------
+
 VERSION 0.9
 	Refreshing to newest MTA status
 
@@ -9,13 +35,8 @@ VERSION 0.9
 - various bugfixes
 - dxElements is now open-source.
 
-Latest resedit is located at:
-https://github.com/quiret/resedit
-
-Feel free to contribute to the development of resedit. :)
-
-If you like my tools, please check out Magic.TXD, the RenderWare TXD editor!
-http://www.gtamodding.com/wiki/Magic.TXD
+This was a release where I pushed code that happened to be around but never
+made it into full completion due to MTA:Eir development.
 
 ------------------------------------------------------------
 
