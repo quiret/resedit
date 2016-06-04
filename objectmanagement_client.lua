@@ -198,7 +198,7 @@ addEventHandler("onClientKey", root, function(button, state)
         if (mainGUI) and (mainGUI.visible) then return false; end;
         
         if (state) then
-            if not (access.account.editor.objectManagement) then return false; end;
+            if not (doWeHaveAccessTo("editor", "objectManagement")) then return false; end;
             if (bObjectEdit) then return false; end;
             
             bSelecting=true;

@@ -3,6 +3,8 @@
         <right object="editor.access" allow="true"></right>
         <right object="editor.objectManagement" allow="true"></right>
         <right object="editor.scriptLock" allow="true"></right>
+        <right object="editor.addScript" allow="true" />
+        <right object="editor.removeScript" allow="false" />
         <right object="editor.createResource" allow="true"></right>
         <right object="editor.removeResource" allow="false"></right>
         <right object="controlPanel.access" allow="false"></right>

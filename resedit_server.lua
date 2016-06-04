@@ -135,6 +135,8 @@ local function initDefaultAccountRights()
 		access = false,
 		objectManagement = false,
 		scriptLock = false,
+        addScript = false,
+        removeScript = false,
 		createResource = false,
 		removeResource = false
 	};
@@ -157,18 +159,6 @@ local function createAccountData(user)
 		
 		resources = {}
 	};
-    
-    function account.hasAccessTo(accGroup, itemId)
-        if (accGroup == "editor") then
-            return account.editor[ itemId ];
-        elseif (accGroup == "controlPanel") then
-            return account.controlPanel[itemId];
-        elseif (accGroup == "resources") then
-            return account.resources[itemId];
-        end
-        
-        return false;
-    end
 	
 	-- Inherit defaultAccount's settings
     inheritAccountDefaults(account);
@@ -293,7 +283,7 @@ local function initPlayer(client)
 		while (n <= #sessions) do
 			local session = sessions[n];
 		
-			if not (pData.access[session.resource]) or not (pData.account.editor.scriptLock) then
+			if not (pData.hasAccessTo("resources", session.resource.getName()) or not (pData.hasAccessTo("editor", "scriptLock"))) then
 				session.script.unlink();
 			else
 				n = n + 1;
@@ -302,6 +292,22 @@ local function initPlayer(client)
 		
 		return true;
 	end
+    
+    function pData.hasAccessTo(accGroup, itemId)
+        -- If we have the right to modify other objects, we are basically root admin.
+        -- Do not give this priviledge out to anyone uncarefully.
+        if (hasObjectPermissionTo(client, "general.ModifyOtherObjects")) then return true; end;
+    
+        if (accGroup == "editor") then
+            return pData.account.editor[ itemId ];
+        elseif (accGroup == "controlPanel") then
+            return pData.account.controlPanel[itemId];
+        elseif (accGroup == "resources") then
+            return pData.access.resources[itemId];
+        end
+        
+        return false;
+    end
 	
 	-- Usually, a joined player is logged out, but whatever
 	local account = getPlayerAccount(client);
@@ -338,6 +344,7 @@ local function updateClientAccess(client)
     
 	-- We simply send the account
     playerAccess.account = pData.account;
+    playerAccess.isAdmin = isClientAdmin(client);
 	
     playerAccess.resources = {};
     
@@ -413,7 +420,7 @@ addEventHandler("onPlayerLogout", root, function(previous, account)
         local m,n;
         
         for m,n in pairs(pData.downloads) do
-            if not (pData.access.resources[n.resource.name]) then
+            if not (pData.hasAccessTo("resources", n.resource.name)) then
                 triggerClientEvent(source, "onClientDownloadAbort", root, n.id);
                 
                 pData.downloads[m] = nil;
@@ -422,7 +429,7 @@ addEventHandler("onPlayerLogout", root, function(previous, account)
 		
 		-- Abort uploads
 		for m,n in pairs(pData.uploads) do
-			if not (pData.access.resources[n.resource.name]) then
+			if not (pData.hasAccessTo("resources", n.resource.name)) then
 				n.abort();
 			end
 		end
@@ -450,7 +457,7 @@ addEventHandler("onFileHashRequest", root, function(id, resource, filename)
 		
 		if not (res) then return false; end;
 		
-		if not (pData.access.resources[resource]) then
+		if not (pData.hasAccessTo("resources", resource)) then
 			triggerClientEvent(client, "onClientFileHashAbort", root, id);
 			return false;
 		end
@@ -496,7 +503,7 @@ addEventHandler("onDownloadRequest", root, function(id, resource, filename)
         
         if not (res) then return false; end;
         
-        if not (pData.access.resources[resource]) then
+        if not (pData.hasAccessTo("resources", resource)) then
             outputChatBox("Access denied to resource '" .. resource .. "'", client);
             return false;
         end
@@ -582,6 +589,11 @@ addEvent("onDownloadAbort", true);
 addEventHandler("onDownloadAbort", root, function(id)
         local pData = playerData[client];
 		local trans = pData.downloads[tostring(id)];
+        
+        if not (trans) then
+            outputDebugString("Internal error: Unknown transaction", client);   -- :( somebody screws around with us
+            return false;
+        end
 		
 		-- Close the file
 		trans.file.destroy();
@@ -598,10 +610,10 @@ addEventHandler("onClientRequestScriptLock", root, function(resource, filename)
         
         if not (res) then return false; end;
 		
-		if not (pData.account.editor.scriptLock) then return false; end;
+		if not (pData.hasAccessTo("editor", "scriptLock")) then return false; end;
         
         -- Access check
-        if not (pData.access.resources[resource]) then
+        if not (pData.hasAccessTo("resources", resource)) then
             return false;
         end
 		
@@ -698,7 +710,7 @@ addEventHandler("onUploadRequest", root, function(id, resource, filename)
         end
         
         -- Access check
-        if not (pData.access.resources[resource]) then
+        if not (pData.hasAccessTo("resources", resource)) then
             outputChatBox("Access denied to resource '" .. res.name .. "'", client);
             return false;
         end
@@ -805,10 +817,25 @@ addEventHandler("onClientRequestControlPanelSession", root, function(password)
 		local pData = playerData[client];
 		local session;
 		local m,n;
+        
+        if not (password) then
+            kickPlayer(client, "smart asses not welcome here.");
+            return false;
+        end
+        
+        if not (pData.hasAccessTo("controlPanel", "access")) then
+            outputChatBox("Access denied to control panel.", client);
+            return false;
+        end
 		
-		if (pData.access.requirePassword) and not (controlPanel.attr.password == password) then
-			triggerClientEvent(client, "onControlPanelWrongPassword", client);
-			return false;
+        -- Access check.
+		if (pData.account.controlPanel.requirePassword) then
+            local reqPassword = controlPanel.attr.password;
+            
+            if not (reqPassword) or not (password == reqPassword) then
+                triggerClientEvent(client, "onControlPanelWrongPassword", client);
+                return false;
+            end
 		end
 		
 		session = {
@@ -891,9 +918,16 @@ addEventHandler("onClientAddScript", root, function(resource, filename, scriptty
 		
 		if not (res) then return false; end;
             
-		if not (res.authorserial == getPlayerSerial(client)) and (not pData.access.resources[resource] and not (hasObjectPermissionTo(client, "general.ModifyOtherObjects"))) then
-			outputChatBox("Access denied to resource '"..n.name.."'", client);
-			return false;
+		if not (res.authorserial == getPlayerSerial(client)) then
+            if not (pData.hasAccessTo("editor", "addScript")) then
+                outputChatBox("No permission to add scripts.", client);
+                return false;
+            end
+        
+            if not (pData.hasAccessTo("resources", resource)) then
+                outputChatBox("Access denied to resource '" .. n.name .. "'", client);
+                return false;
+            end
 		end
 		
 		-- no hax plz
@@ -952,20 +986,22 @@ addEventHandler("onClientAddScript", root, function(resource, filename, scriptty
 
 addEvent("onClientRemoveScript", true);
 addEventHandler("onClientRemoveScript", root, function(resource, filename)
-        if not (hasObjectPermissionTo(client, "general.ModifyOtherObjects")) then
-            outputChatBox("You do not have the permission to remove scripts.", client);
-            return false;
-        end
-		
 		local pData = playerData[client];
         local m,n;
         local res = getResourceFromNameEx(resource);
 		
 		if not (res) then return false; end
             
-		if not (res.authorserial == getPlayerSerial(client)) and not (pData.access.resources[resource]) then
-			outputChatBox("Access denied to resource '" .. resource .. "'", client);
-			return false;
+		if not (res.authorserial == getPlayerSerial(client)) then
+            if not (pData.hasAccessTo("editor", "removeScript")) then
+                outputChatBox("No permission to remove scripts", client);
+                return false;
+            end
+        
+            if not (pData.hasAccessTo("resources", resource)) then
+                outputChatBox("Access denied to resource '" .. resource .. "'", client);
+                return false;
+            end
 		end
 		
 		-- File exists already?
@@ -1037,7 +1073,7 @@ addEvent("onClientRequestResourceCreation", true);
 addEventHandler("onClientRequestResourceCreation", root, function(name, restype, description)
 		local pData = playerData[client];
 
-        if not (pData.account.editor.createResource) then
+        if not (pData.hasAccessTo("editor", "createResource")) then
             outputChatBox("You do not have the permission to create resources", client);
             return false;
         end
@@ -1100,7 +1136,7 @@ addEventHandler("onClientRequestResourceRemoval", root, function(resname)
 		end
 		
 		-- You can only remove your resources, or if you have admin
-		if not (res.authorserial == getPlayerSerial(client)) and not (pData.account.editor.removeResource) then
+		if not (res.authorserial == getPlayerSerial(client)) and not (pData.hasAccessTo("editor", "removeResource")) then
 			outputChatBox("You do not have the permission to remove resource '"..resname.."'", client);
 			return false;
 		end
@@ -1133,7 +1169,7 @@ addEventHandler("onClientRequestStartResource", root, function(resource)
                 return false;
             end
 
-            if not (pData.access.resources[resource]) then
+            if not (pData.hasAccessTo("resources", resource)) then
                 outputChatBox("Access denied to resource '" .. resource .. "'", client);
                 return false;
             end
@@ -1162,7 +1198,7 @@ addEventHandler("onClientRequestStopResource", root, function(resource)
                 return false;
             end
 
-            if not (pData.access.resources[resource]) then
+            if not (pData.hasAccessTo("resources", resource)) then
                 outputChatBox("Access denied to resource '" .. resource .. "'", client);
                 return false;
             end

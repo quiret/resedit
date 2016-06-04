@@ -146,6 +146,22 @@ local function isEditorClientReady()
 end
 _G.isEditorClientReady = isEditorClientReady;
 
+function doWeHaveAccessTo(group, itemId)
+    if (access.isAdmin) then
+        return true;
+    end
+    
+    if (group == "editor") then
+        return access.account.editor[itemId];
+    elseif (group == "controlPanel") then
+        return access.account.controlPanel[itemId];
+    elseif (group == "resources") then
+        return access.resources[itemId];
+    end
+    
+    return false;
+end
+
 function initLibrary()
 	library = {};
 end
@@ -1096,7 +1112,7 @@ function showResourceSelect(bShow)
                 guiSetProperty(pList, "SortDirection", "");
                 
                 for m,n in ipairs(resourceList) do
-                    if (access.resources[n]) then
+                    if (doWeHaveAccessTo("resources", n)) then
                         local resource = resourceData[n];
                         local row = guiGridListAddRow(pList);
                         
@@ -3008,7 +3024,7 @@ function showResourceGUI(bShow)
         if not (isEditorClientReady()) then return false, "not initialized"; end;
         
         -- Priviledge to open it
-        if (access.account.editor.access == false) then
+        if (doWeHaveAccessTo("editor", "access") == false) then
             return false, "no permission";
         end
     
@@ -3635,6 +3651,9 @@ function showResourceGUI(bShow)
 			
 			function mainGUI.updateAccess()
 				-- Update access oriented elements
+                pAddScript.setDisabled(doWeHaveAccessTo("editor", "addScript") == false);
+                pRemoveScript.setDisabled(doWeHaveAccessTo("editor", "removeScript") == false);
+                
 				return true;
 			end
             
@@ -3805,6 +3824,7 @@ function showResourceGUI(bShow)
 			
 			-- Update
 			mainGUI.updateResource();
+            mainGUI.updateAccess();
 		elseif (mainGUI.visible) then
 			return true;
         else
@@ -3910,7 +3930,7 @@ addEventHandler("onClientAccessRightsUpdate", root, function(accessTable)
         _G.access = accessTable;
         outputDebugString("Received access rights");
         
-        if (access.account.editor.access) then
+        if (doWeHaveAccessTo("editor", "access")) then
             -- Close that window to avoid bugs ;)
             if (pDenyEditorAccessMsg) then
                 closeMessageBox(pDenyEditorAccessMsg);
@@ -3920,12 +3940,12 @@ addEventHandler("onClientAccessRightsUpdate", root, function(accessTable)
             end
 		
 			-- Check whether we lost access or just do not have a valid resource selected
-			if not (currentResource) or not (access.resources[currentResource.name]) then
+			if not (currentResource) or not (doWeHaveAccessTo("resources", currentResource.name)) then
 				currentResource = false;
 			
 				-- Select the first resource we have access to
 				for m,n in ipairs(resourceList) do
-					if (access.resources[n]) then
+					if (doWeHaveAccessTo("resources", n)) then
 						currentName = n;
 						currentResource = resourceData[n];
 						currentType = currentResource.type;

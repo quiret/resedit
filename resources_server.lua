@@ -278,13 +278,18 @@ function loadResource(pResource)
 		};
 		
 		function script.link(client, session)
+            if (script.lockClient) then return false; end;
+        
 			script.lockClient = client;
 			script.session = session;
+            return true;
 		end
 		
 		function script.unlink()
-			script.lockClient = false;
-			script.session.destroy();
+            if (script.lockClient) then
+                script.lockClient = false;
+                script.session.destroy();
+            end
 		end
 		
 		table.insert(scripts, script);
@@ -692,29 +697,38 @@ function isElementChildOf(element, parent)
 	end
 end
 
+function isClientAdmin(client)
+    return hasObjectPermissionTo(client, "general.ModifyOtherObjects");
+end
+
 function checkResourceAccess(client, resource)
+    -- We could be root admin.
+    if (isClientAdmin(client)) then
+        return true;
+    end
+
     local pAccount = getPlayerAccount(client);
 	
     if not (pAccount) then return false; end;
     
-    local groups=aclGroupList();
-    local clientGroups={};
-    local resourceGroups={};
+    local groups = aclGroupList();
+    local clientGroups = {};
+    local resourceGroups = {};
     local m,n;
 	
     for m,n in ipairs(groups) do
         local k,j;
-        local objects=aclGroupListObjects(n);
+        local objects = aclGroupListObjects(n);
         
         for k,j in ipairs(objects) do
-            if ("user."..getAccountName(pAccount) == j) then
+            if ("user." .. getAccountName(pAccount) == j) then
                 local a,b;
                 local acl=aclGroupListACL(n);
                 
                 for a,b in ipairs(acl) do
                     table.insert(clientGroups, b);
                 end
-            elseif ("resource."..getResourceName(resource) == j) then
+            elseif ("resource." .. getResourceName(resource) == j) then
                 local a,b;
                 local acl=aclGroupListACL(n);
                 
