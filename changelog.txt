@@ -7,6 +7,21 @@ https://github.com/quiret/resedit
 Feel free to contribute to the development of resedit. :)
 ============================================================================
 
+VERSION 0.9.2
+    New features!
+    
+- dxElement'ified the resource select
+- added searchbox to resource select to quickly find the resources you work with
+- added ability to reload server config (resedit_cfgupd)
+- added ability to create resizable dxElements windows + minimum dxElement dimensions
+- implemented ideas by IIYAMA (thank you!)
+ * double clicking in function list adds functionname into current editor
+ * fixed type problems in openScript API
+ * added close button into resource select GUI
+- minor bug fixes and improvements
+
+------------------------------------------------------------
+
 VERSION 0.9.1
 	Bugfixes and improvements
 
