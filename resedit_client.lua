@@ -281,6 +281,8 @@ function updateFunctionList()
 			end
 			
 			pFunctionList.setItemText(1, row, display);
+            
+            pFunctionList.getItemData(1, row).funcName = n.name;
 			
 			local color = scriptColors[n.type];
 			
@@ -3352,6 +3354,8 @@ function showResourceGUI(bShow)
             
             function pCloseButton.events.onPress()
 				currentSession.destroy();
+                
+                currentSession = false;
 				return true;
 			end
         
@@ -3524,6 +3528,30 @@ function showResourceGUI(bShow)
 			pFunctionList.addColumn();
 			pFunctionList.setColumnName(1, "Function");
 			pFunctionList.setColumnWidth(1, 335);
+            
+            function pFunctionList.events.onListBoxConfirm()
+                local selectedItems = pFunctionList.getSelection();
+
+                if not (selectedItems) then return; end;
+
+                local firstSelect = selectedItems[1];
+                
+                if not (firstSelect) then return; end;
+                
+                local itemData = getItemData(1, firstSelect);
+                
+                -- Add stuff to our magic.
+                if (currentSession) then
+                    local editor = currentSession.getEditor();
+                    
+                    local cursor = editor.getCursor();
+                    
+                    editor.insertText(itemData.funcName, cursor);
+                    editor.setCursor(cursor + #itemData.funcName);
+                    
+                    editor.giveFocus();
+                end
+            end
 			
             function mainGUI.update()
                 pFileList.clearRows();

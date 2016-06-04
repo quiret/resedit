@@ -238,7 +238,8 @@ function createListBox(parent)
         function column.addRow()
             table.insert(items, {
 				text = "",
-				color = false
+				color = false,
+                data = {}
 			});
             return true;
         end
@@ -270,6 +271,12 @@ function createListBox(parent)
 			if (row < 1) or (row > numRows) then return false; end;
 		
             return items[row].text;
+        end
+        
+        function column.getRowData(row)
+            if (row < 1) or (row > numRows) then return false; end;
+            
+            return items[row].data;
         end
 		
 		function column.clear()
@@ -347,7 +354,7 @@ function createListBox(parent)
         
         return column.getName();
     end
-
+    
     function listbox.setColumnWidth(id, w)
         local column = columns[id];
         
@@ -403,6 +410,14 @@ function createListBox(parent)
         if not (column) then return false; end;
         
         return column.getText(r);
+    end
+    
+    function listbox.getItemData(c, r)
+        local column = columns[c];
+        
+        if not (column) then return false; end;
+        
+        return column.getRowData(r);
     end
 	
 	function listbox.setItemColor(c, row, r, g, b)
