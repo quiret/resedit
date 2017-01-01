@@ -193,11 +193,12 @@ addEventHandler("onClientClick", getRootElement(), function(button, state, x, y,
 
 addEventHandler("onClientKey", root, function(button, state)
         if not (isEditorClientReady()) then return false; end;
-		if not (button == "lctrl") then return false; end;
+		if not (button == reseditGetKeyBind("objmgmt", "lctrl")) then return false; end;
         
         if (mainGUI) and (mainGUI.visible) then return false; end;
         
         if (state) then
+            if not (objmgmt.attr.enable == "true") then return false; end;
             if not (doWeHaveAccessTo("editor", "objectManagement")) then return false; end;
             if (bObjectEdit) then return false; end;
             

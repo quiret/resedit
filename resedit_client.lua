@@ -355,8 +355,10 @@ local function loadConfig()
     editor = findCreateNode(config, "editor");
 	themes = findCreateNode(config, "themes");
     transfer = findCreateNode(config, "transfer");	-- global node
+    objmgmt = findCreateNode(config, "objmgmt"); -- global node
     syntax = findCreateNode(config, "syntax");
     specialsyntax = findCreateNode(config, "specialsyntax");
+    keybinds = findCreateNode(config, "keybinds"); -- global node
     string1 = findCreateNode(specialsyntax, "string1");
     string2 = findCreateNode(specialsyntax, "string2");
     string3 = findCreateNode(specialsyntax, "string3");
@@ -383,7 +385,26 @@ local function loadConfig()
 
     -- Set up the nodes
     local m,n;
-
+    
+    function objmgmt.cbAddChild(child)
+        showMessageBox("Cannot add children to objmgmt node", "Child Creation Failure");
+        return false;
+    end
+    
+    function objmgmt.cbSetAttribute(key, value)
+        if (key == "enable") then
+            if (value == "true") or (value == "false") then
+                objmgmt.attr[key] = value;
+                return true;
+            end
+        
+            showMessageBox("Can be either 'true' or 'false'", "Value Error");
+            return false;
+        end
+        
+        return true;
+    end
+    
     function initSyntaxEntry(node)
         function node.cbAddChild(child)
             return false;
@@ -485,9 +506,7 @@ local function loadConfig()
         end
         
         function node.cbUnsetAttribute(key)
-            if (key == "textColor") or
-                (key == "backColor") then
-               
+            if (key == "textColor") or (key == "backColor") then
                 node.attr[key] = nil;
                 
                 -- Update the GUI
@@ -793,6 +812,39 @@ local function loadConfig()
         
         return true;
     end
+    
+    local function initKeyBindNode(node)
+        function node.cbAddChild(child)
+            return false;
+        end
+        
+        function node.cbSetAttribute(key, value)
+            if (key == "key") then
+                -- Check if the value is a valid key name.
+                if not (inputIsValidKey(value)) then
+                    showMessageBox(value .. " is not a valid key name.", "Value Error");
+                    return false;
+                end
+                
+                -- OK.
+                node.attr[key] = value;
+                return true;
+            end
+            
+            return true;
+        end
+        
+        return true;
+    end
+    
+    function keybinds.cbAddChild(node)
+        initKeyBindNode(node);
+        return true;
+    end
+    
+    for m,n in ipairs(keybinds.children) do
+        initKeyBindNode(n);
+    end
 	
 	-- Load the internal definitions
 	internalDefinitions = loadDictionary(dict);
@@ -1070,6 +1122,22 @@ local function loadConfig()
 	end
 end
 loadConfig();
+
+function reseditGetKeyBind(keyName, defaultKey)
+    local keybinds = keybinds;
+    
+    local keyNode = xmlFindSubNodeEx(keybinds, keyName);
+    
+    if (keyNode) then
+        local valueName = keyNode.attr.key;
+        
+        if (valueName) then
+            return valueName;
+        end
+    end
+    
+    return defaultKey;
+end
 
 function showResourceSelect(bShow)
     if (bShow == true) then
@@ -1595,27 +1663,27 @@ addEventHandler("onClientKey", root, function(button, state)
         if not (isEditorClientReady()) then return false; end;
 		
 		if not (mainGUI) or not (mainGUI.visible) then
-			if (button == "F6") then
+			if (button == reseditGetKeyBind("editoropen", "F6")) then
 				showResourceGUI(true);
 			end
 		else		
-			if (button == "F7") then
+			if (button == reseditGetKeyBind("fullscreeneditor", "F7")) then
 				if (guiGetScreenSize() < 1024) then return; end;
 			
 				setEditorMode(editorMode + 1);
-			elseif (button == "F6") then
+			elseif (button == reseditGetKeyBind("editoropen", "F6")) then
 				showResourceGUI(false);
-			elseif (button == "F5") then
+			elseif (button == reseditGetKeyBind("xmleditoropen", "F5")) then
                 if not (xmlDoesEditorExistForNode(config)) then
                     xmlCreateEditor(config);
                 end
-			elseif (button == "F4") then
+			elseif (button == reseditGetKeyBind("fileeditoropen", "F4")) then
 				if (useFileManager) then
 					showFileManager(true);
 				else
 					mainGUI.nextFileMode();
 				end
-			elseif (button == "F2") then
+			elseif (button == reseditGetKeyBind("controlpanelopen", "F2")) then
 				showControlPanel(true);
 			end
 		end

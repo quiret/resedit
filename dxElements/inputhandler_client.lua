@@ -143,6 +143,12 @@ function inputResurrect(status)
 	active = true;
 end
 
+function inputIsValidKey(keyName)
+    local info = keyInfo[keyName];
+    
+    return not not (info);
+end
+
 local function handleKeyInput(button, down, isInput)
     if (isMTAWindowActive()) then return false; end;
     if (active) and (enableKeyInput) and (targetHierarchy.handleKeyInput(button, down, isInput)) then return true; end;

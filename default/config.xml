@@ -1,6 +1,7 @@
 <config>
     <editor automaticIndentation="true" fontSize="1" useFileManager="false" automaticIdentation="true" notifyOnChange="false" font="sans" showFunctionsFullscreen="false" useResourceSelect="true" showLineNumbers="true"></editor>
     <transfer createRepository="true" deleteOnQuit="false" mtu="1200"></transfer>
+    <objmgmt enable="true" />
     <syntax enable="true">
         <if textColor="1919A0"></if>
         <else textColor="1919A0"></else>
@@ -35,6 +36,14 @@
         <string2 textColor="AF0000"></string2>
         <string3 backColor="F0F0F0" textColor="AF0000"></string3>
     </specialsyntax>
+    <keybinds>
+        <controlpanelopen key="F2" />
+        <fileeditoropen key="F4" />
+        <xmleditoropen key="F5" />
+        <editoropen key="F6" />
+        <fullscreeneditor key="F7" />
+        <objmgmt key="lctrl" />
+    </keybinds>
     <dict colorFunctions="true" functionlistArguments="true" enableHints="true" showHintDescription="true">
         <client>
             <functions>

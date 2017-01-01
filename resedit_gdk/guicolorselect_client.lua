@@ -269,6 +269,28 @@ function createColorSelect(parent)
 		updateColor(r, g, b);
 		return true;
 	end
+    
+    local function adjustColorByInput()
+        local redValue = tonumber(redEdit.getText());
+        local greenValue = tonumber(greenEdit.getText());
+        local blueValue = tonumber(blueEdit.getText());
+        
+        if not (redValue) or not (greenValue) or not (blueValue) then return; end;
+        
+        window.setSelectedColor(redValue, greenValue, blueValue);
+    end
+    
+    function redEdit.events.onAccept()
+        adjustColorByInput();
+    end
+    
+    function greenEdit.events.onAccept()
+        adjustColorByInput();
+    end
+    
+    function blueEdit.events.onAccept()
+        adjustColorByInput();
+    end
 	
 	function root.render()
 		dxDrawText("Brightness " .. math.floor(255 * brightSlider.getSliderPosition()), 10, 175, 0, 0, white, 1, "arial");
