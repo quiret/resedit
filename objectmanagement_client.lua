@@ -80,7 +80,17 @@ function showObjectGUI(bShow)
             pObjectInfo.savePosition = pSavePos;
             
             addEventHandler("onClientGUIClick", pSavePos, function(button, state, x, y)
+                    local posXString = guiGetText(pPosX);
+                    local posYString = guiGetText(pPosY);
+                    local posZString = guiGetText(pPosZ);
                     
+                    if not (posXString) or not (posYString) or not (posZString) then return; end;
+                    
+                    local posX = tonumber(posXString);
+                    local posY = tonumber(posYString);
+                    local posZ = tonumber(posZString);
+                    
+                    triggerServerEvent("onClientRequestEditElementPosition", pEditObject, posX, posY, posZ);
                 end, false
             );
             
@@ -101,7 +111,17 @@ function showObjectGUI(bShow)
             pObjectInfo.saveRotation = pSaveRot;
             
             addEventHandler("onClientGUIClick", pSaveRot, function(button, state, x, y)
+                    local rotXString = guiGetText(pRotX);
+                    local rotYString = guiGetText(pRotY);
+                    local rotZString = guiGetText(pRotZ);
                     
+                    if not (rotXString) or not (rotYString) or not (rotZString) then return; end;
+                    
+                    local rotX = tonumber(rotXString);
+                    local rotY = tonumber(rotYString);
+                    local rotZ = tonumber(rotZString);
+            
+                    triggerServerEvent("onClientRequestEditElementRotation", pEditObject, rotX, rotY, rotZ);
                 end, false
             );
             

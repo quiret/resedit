@@ -1289,8 +1289,8 @@ addEventHandler("onClientRequestElementEdit", root, function()
     end
 );
 
-addEvent("onElementPositionUpdate", true);
-addEventHandler("onElementPositionUpdate", root, function(posX, posY, posZ)
+addEvent("onClientRequestEditElementPosition", true);
+addEventHandler("onClientRequestEditElementPosition", root, function(posX, posY, posZ)
         local pData = playerData[client];
         
         if not (pData.isEditing) or not (pData.editElement == source) then
@@ -1303,8 +1303,8 @@ addEventHandler("onElementPositionUpdate", root, function(posX, posY, posZ)
     end
 );
 
-addEvent("onElementRotationUpdate", true);
-addEventHandler("onElementRotationUpdate", root, function(rotX, rotY, rotZ)
+addEvent("onClientRequestEditElementRotation", true);
+addEventHandler("onClientRequestEditElementRotation", root, function(rotX, rotY, rotZ)
         local pData = playerData[client];
         
         if not (pData.isEditing) or not (pData.editElement==source) then
