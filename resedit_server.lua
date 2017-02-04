@@ -1297,6 +1297,10 @@ addEventHandler("onClientRequestEditElementPosition", root, function(posX, posY,
             kickPlayer(client, "Invalid Element");
             return false;
         end
+        
+        if not (type(posX) == "number") or not (type(posY) == "number") or not (type(posZ) == "number") then
+            return false;
+        end
 		
         setElementPosition(source, posX, posY, posZ);
         triggerClientEvent("onElementPositionUpdate", source, posX, posY, posZ);
@@ -1309,6 +1313,10 @@ addEventHandler("onClientRequestEditElementRotation", root, function(rotX, rotY,
         
         if not (pData.isEditing) or not (pData.editElement==source) then
             outputChatBox("Wrong element", client);
+            return false;
+        end
+        
+        if not (type(rotX) == "number") or not (type(rotY) == "number") or not (type(rotZ) == "number") then
             return false;
         end
 		

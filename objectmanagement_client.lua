@@ -90,6 +90,8 @@ function showObjectGUI(bShow)
                     local posY = tonumber(posYString);
                     local posZ = tonumber(posZString);
                     
+                    if not (posX) or not (posY) or not (posZ) then return; end;
+                    
                     triggerServerEvent("onClientRequestEditElementPosition", pEditObject, posX, posY, posZ);
                 end, false
             );
@@ -120,6 +122,8 @@ function showObjectGUI(bShow)
                     local rotX = tonumber(rotXString);
                     local rotY = tonumber(rotYString);
                     local rotZ = tonumber(rotZString);
+                    
+                    if not (rotX) or not (rotY) or not (rotZ) then return; end;
             
                     triggerServerEvent("onClientRequestEditElementRotation", pEditObject, rotX, rotY, rotZ);
                 end, false
