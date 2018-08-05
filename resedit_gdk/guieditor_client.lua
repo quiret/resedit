@@ -1715,6 +1715,8 @@ function createEditor(parent)
 			cursorMoveTime = getTickCount();
 		elseif (button == "arrow_l") then
 			destroyHint();
+            
+            isHighlight = false;
 		
 			cursorMoveTime = getTickCount();
 		
@@ -1743,6 +1745,8 @@ function createEditor(parent)
 			cursorMoveTime = getTickCount();
 		
 			destroyHint();
+            
+            isHighlight = false;
 			
 			if (cursor == strlen(buffer) + 1) then return true; end;
 			
@@ -1767,6 +1771,8 @@ function createEditor(parent)
 			cursorMoveTime = getTickCount();
 			
 			destroyHint();
+            
+            isHighlight = false;
 		
 			if (cursorLine == 1) then
 				cursor = 1;
@@ -1790,6 +1796,8 @@ function createEditor(parent)
 			cursorMoveTime = getTickCount();
 			
 			destroyHint();
+
+            isHighlight = false;
 		
 			if (cursorLine == #lineInfo) then
 				local info = lineInfo[cursorLine];
