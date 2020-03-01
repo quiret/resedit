@@ -1630,42 +1630,46 @@ function createEditor(parent)
 			local info = lineInfo[cursorLine];
 			
 			destroyHint();
-			
-			if (isHighlight) then
-				local start, term = editor.getHighlight();
-				local lineStart = editor.getLineFromOffset(start);
-				local lineEnd = editor.getLineFromOffset(term);
-				
-				if (lineStart == lineEnd) then
-					if (hierarchy.getKeyState("lshift")) or (hierarchy.getKeyState("rshift")) then return true; end;
-				
-					removeText(start, term - start);
-					editEntryRemove(cursor, strsub(buffer, start, term), 0);
-					
-					editEntryAdd("    ", cursor, 0);
-					insertText("    ", cursor);
-					
-					cursor = start + 4;
-					
-					updateCursor();
-					editor.scanCursor();
-					
-					isHighlight = false;
-					return true;
-				end
-				
-				-- Update the highlight
-				highlightStart = lineInfo[lineStart].offset;
-				
-				if (hierarchy.getKeyState("lshift")) or (hierarchy.getKeyState("rshift")) then
-					editor.scopeTabIn(lineStart, lineEnd);
-				else
-					editor.scopeTabOut(lineStart, lineEnd);
-				end
-				
-				highlightEnd = lineInfo[lineEnd].offsetEnd + 1;
-				return true;
-			end
+            
+            -- Try handling a highlighting.
+            do
+                local hstart, hterm = editor.getHighlight();
+                
+                if (hstart) then
+                    local lineStart = editor.getLineFromOffset(hstart);
+                    local lineEnd = editor.getLineFromOffset(hterm);
+                    
+                    if (lineStart == lineEnd) then
+                        if (hierarchy.getKeyState("lshift")) or (hierarchy.getKeyState("rshift")) then return true; end;
+                    
+                        removeText(start, hterm - hstart);
+                        editEntryRemove(cursor, strsub(buffer, hstart, hterm), 0);
+                        
+                        editEntryAdd("    ", cursor, 0);
+                        insertText("    ", cursor);
+                        
+                        cursor = hstart + 4;
+                        
+                        updateCursor();
+                        editor.scanCursor();
+                        
+                        isHighlight = false;
+                        return true;
+                    end
+                    
+                    -- Update the highlight
+                    highlightStart = lineInfo[lineStart].offset;
+                    
+                    if (hierarchy.getKeyState("lshift")) or (hierarchy.getKeyState("rshift")) then
+                        editor.scopeTabIn(lineStart, lineEnd);
+                    else
+                        editor.scopeTabOut(lineStart, lineEnd);
+                    end
+                    
+                    highlightEnd = lineInfo[lineEnd].offsetEnd + 1;
+                    return true;
+                end
+            end
 			
 			local m = math.mod(cursor - info.offset, 4);
 			

@@ -344,7 +344,7 @@ addEventHandler("onClientRender", getRootElement(), function(a, b, posX, posY, p
 		end
         
         setElementPosition(pEditObject, posX, posY, posZ);
-        triggerServerEvent("onElementPositionUpdate", pEditObject, posX, posY, posZ);
+        triggerServerEvent("onClientRequestEditElementPosition", pEditObject, posX, posY, posZ);
     end
 );
 
